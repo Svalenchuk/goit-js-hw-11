@@ -18,7 +18,7 @@ refs.searchForm.addEventListener('submit', onSearchForm);
 
 refs.loadMore.addEventListener('click',onLoadMore);
 
-function onSearchForm(evt) { 
+async function onSearchForm(evt) { 
   evt.preventDefault();
   page = 1;
   query = evt.currentTarget.elements.searchQuery.value.trim();
@@ -30,9 +30,10 @@ function onSearchForm(evt) {
     );
     return;
   }
-  fetchImages(query, page, perPage)
-    .then(response => {
-      if (response.hits.length < perPage) {
+  try {
+    const response = await fetchImages(query, page, perPage);
+
+  if (response.hits.length < perPage) {
         refs.loadMore.classList.replace('load-more', 'load-more-hidden');
         refs.loadMore.disabled = true;
       } else {
@@ -55,24 +56,25 @@ function onSearchForm(evt) {
           captionDelay: 250,
         }).refresh();
         Notiflix.Notify.success(
-          `Hooray! We found ${response.totalHits} images.`
-        );
+          `Hooray! We found ${response.totalHits} images.`);
       }
-    })
-    .catch(onFetchError)
-    .finally(() => {
+    } catch (error) {
+      onFetchError(error);
+
+    } finally {
       refs.searchForm.reset();
-    });
+    }
 }
 
-function onLoadMore() {
+async function onLoadMore() {
   page += 1;
   simpleLightBox.destroy();
 
   refs.loadMore.disabled = true;
 
-  fetchImages(query, page, perPage)
-    .then(response => {
+  try {
+    const response = await fetchImages(query, page, perPage);
+
       refs.gallery.insertAdjacentHTML('beforeend', createMarkup(response.hits));
       simpleLightBox = new SimpleLightbox('.gallery a', {
         captions: true,
@@ -80,6 +82,7 @@ function onLoadMore() {
         captionPosition: 'bottom',
         captionDelay: 250,
       }).refresh();
+
       const totalPages = Math.ceil(response.totalHits / perPage);
 
       if (page < totalPages) {
@@ -91,9 +94,10 @@ function onLoadMore() {
         );
         refs.loadMore.classList.replace('load-more', 'load-more-hidden');
       }
-    })
-    .catch(onFetchError);
-}
+    } catch (error) {
+      onFetchError(error);
+    }
+  } 
 
 function createMarkup(arr) {
   return arr
@@ -134,6 +138,6 @@ function onFetchError(error) {
       timeout: 5000,
       width: '400px',
       fontSize: '24px',
-    }
+    } 
   );
 }
